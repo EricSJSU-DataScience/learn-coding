@@ -1,0 +1,600 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Code Camp — Learn Python</title>
+<script src="https://cdn.jsdelivr.net/pyodide/v314.0.2/full/pyodide.js"></script>
+<script src="lessons.js"></script>
+<style>
+  :root {
+    --bg: #1e1f29;
+    --panel: #282a36;
+    --panel-2: #313344;
+    --border: #3f4256;
+    --text: #f1f2f6;
+    --text-dim: #a9acc4;
+    --accent: #8be9fd;
+    --accent-2: #bd93f9;
+    --green: #50fa7b;
+    --yellow: #f1fa8c;
+    --pink: #ff79c6;
+    --red: #ff5555;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0; height: 100%;
+    background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  #app { display: flex; flex-direction: column; height: 100%; }
+
+  header {
+    display: flex; align-items: center; gap: 14px;
+    padding: 12px 20px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  header h1 {
+    font-size: 18px; margin: 0; white-space: nowrap;
+    color: var(--accent);
+  }
+  header h1 span { color: var(--pink); }
+  #bootStatus {
+    font-size: 13px; color: var(--text-dim);
+    padding: 3px 10px; border-radius: 999px;
+    background: var(--panel-2); white-space: nowrap;
+  }
+  #bootStatus.ready { color: var(--green); }
+  #progressWrap {
+    flex: 1; display: flex; align-items: center; gap: 10px; min-width: 120px;
+  }
+  #progressBarOuter {
+    flex: 1; height: 10px; border-radius: 999px;
+    background: var(--panel-2); overflow: hidden; border: 1px solid var(--border);
+  }
+  #progressBarInner {
+    height: 100%; width: 0%; background: linear-gradient(90deg, var(--accent-2), var(--accent));
+    transition: width .3s ease;
+  }
+  #progressLabel { font-size: 13px; color: var(--text-dim); white-space: nowrap; }
+  #resetBtn { font-size: 12px; padding: 6px 12px; }
+
+  #body { flex: 1; display: flex; min-height: 0; }
+
+  nav#sidebar {
+    width: 260px; flex-shrink: 0; overflow-y: auto;
+    background: var(--panel); border-right: 1px solid var(--border);
+    padding: 6px 0 16px;
+  }
+  .unit-header {
+    font-size: 11px; text-transform: uppercase; letter-spacing: .06em;
+    color: var(--text-dim); padding: 16px 16px 6px;
+  }
+  .lesson-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 16px; cursor: pointer; font-size: 14px;
+    border-left: 3px solid transparent;
+    color: var(--text-dim);
+  }
+  .lesson-item:hover { background: var(--panel-2); color: var(--text); }
+  .lesson-item.active {
+    background: var(--panel-2); color: var(--text);
+    border-left-color: var(--accent);
+  }
+  .lesson-num {
+    width: 22px; height: 22px; border-radius: 50%; flex-shrink: 0;
+    background: var(--panel-2); border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10.5px; color: var(--text-dim);
+  }
+  .lesson-item.partial .lesson-num { border-color: var(--accent-2); color: var(--accent-2); }
+  .lesson-item.done .lesson-num { background: var(--green); border-color: var(--green); color: #10381f; }
+  .lesson-item.done { color: var(--text); }
+
+  main#content { flex: 1; overflow-y: auto; padding: 28px 40px 60px; max-width: 900px; }
+
+  main h2 { margin: 0 0 4px; font-size: 26px; color: var(--accent); }
+  .blurb { color: var(--text-dim); margin: 0 0 20px; font-size: 15px; }
+  .concept { line-height: 1.6; font-size: 15px; }
+  .concept p { margin: 0 0 12px; }
+  .concept code { background: var(--panel-2); padding: 2px 6px; border-radius: 4px; font-size: 13px; }
+  .concept ul { margin: 0 0 12px; padding-left: 22px; }
+
+  pre.code-block {
+    background: var(--panel-2); border: 1px solid var(--border); border-radius: 8px;
+    padding: 14px 16px; overflow-x: auto; font-size: 13.5px; line-height: 1.5;
+    font-family: "SF Mono", Menlo, Consolas, monospace; margin: 0 0 18px;
+  }
+  .tok-keyword { color: var(--pink); }
+  .tok-builtin { color: var(--accent); }
+  .tok-string { color: var(--yellow); }
+  .tok-comment { color: var(--text-dim); font-style: italic; }
+  .tok-number { color: var(--accent-2); }
+
+  .notes { font-size: 14px; line-height: 1.6; color: var(--text-dim); margin-bottom: 8px; }
+  .notes ul { margin: 0; padding-left: 20px; }
+  .notes li { margin-bottom: 4px; }
+
+  hr.divider { border: none; border-top: 1px solid var(--border); margin: 26px 0; }
+
+  .exercise-pills { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+  .exercise-pill {
+    font-size: 12.5px; font-weight: 600; padding: 5px 12px; border-radius: 999px;
+    border: 1px solid var(--border); background: var(--panel-2); color: var(--text-dim);
+    cursor: pointer;
+  }
+  .exercise-pill:hover { color: var(--text); }
+  .exercise-pill.active { border-color: var(--accent); color: var(--accent); }
+  .exercise-pill.pill-done { border-color: var(--green); color: var(--green); }
+
+  h3.exercise-title { font-size: 18px; margin: 0 0 10px; color: var(--pink); }
+  .exercise-desc { font-size: 14.5px; line-height: 1.6; margin-bottom: 14px; }
+  .exercise-desc code { background: var(--panel-2); padding: 2px 6px; border-radius: 4px; font-size: 13px; }
+
+  textarea#editor {
+    width: 100%; min-height: 170px; resize: vertical;
+    background: #11121a; color: #f1f2f6; border: 1px solid var(--border);
+    border-radius: 8px; padding: 14px 16px; font-size: 14px;
+    font-family: "SF Mono", Menlo, Consolas, monospace; line-height: 1.5;
+    tab-size: 4;
+  }
+  textarea#editor:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+  .toolbar { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; align-items: center; }
+  .autosave-note { font-size: 12px; color: var(--text-dim); }
+  button {
+    font-family: inherit; font-size: 14px; font-weight: 600;
+    padding: 9px 16px; border-radius: 8px; border: 1px solid var(--border);
+    cursor: pointer; background: var(--panel-2); color: var(--text);
+    transition: transform .05s ease, background .15s ease;
+  }
+  button:hover:not(:disabled) { background: #3a3d52; }
+  button:active:not(:disabled) { transform: scale(0.97); }
+  button:disabled { opacity: 0.45; cursor: not-allowed; }
+  button.primary { background: var(--accent); color: #0c2b30; border-color: var(--accent); }
+  button.primary:hover:not(:disabled) { background: #a2f1ff; }
+  button.check { background: var(--green); color: #0e3320; border-color: var(--green); }
+  button.check:hover:not(:disabled) { background: #7dffa4; }
+  button.ghost { background: transparent; }
+
+  #hintBox {
+    margin-top: 12px; padding: 12px 16px; border-radius: 8px;
+    background: rgba(241, 250, 140, 0.08); border: 1px solid var(--yellow);
+    color: var(--yellow); font-size: 14px; line-height: 1.5;
+  }
+  #hintBox.hidden { display: none; }
+
+  #output { margin-top: 16px; }
+  .out-pre {
+    background: #0c0d13; border: 1px solid var(--border); border-radius: 8px;
+    padding: 12px 16px; font-family: "SF Mono", Menlo, Consolas, monospace;
+    font-size: 13.5px; white-space: pre-wrap; word-break: break-word;
+    min-height: 20px; color: #d8d9e6;
+  }
+  .out-label { font-size: 12px; text-transform: uppercase; letter-spacing: .05em;
+    color: var(--text-dim); margin: 14px 0 6px; }
+  .out-error { color: var(--red); }
+  .result-banner {
+    margin-top: 14px; padding: 12px 16px; border-radius: 8px; font-size: 14.5px; line-height: 1.5;
+  }
+  .result-pass { background: rgba(80, 250, 123, 0.12); border: 1px solid var(--green); color: var(--green); }
+  .result-fail { background: rgba(255, 121, 198, 0.1); border: 1px solid var(--pink); color: var(--pink); }
+
+  .lesson-nav { display: flex; justify-content: space-between; margin-top: 34px; }
+
+  @media (max-width: 760px) {
+    nav#sidebar { width: 74px; }
+    .lesson-item span.lesson-title { display: none; }
+    .unit-header { display: none; }
+    main#content { padding: 20px; }
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <h1>Code<span>Camp</span> 🐍</h1>
+    <div id="progressWrap">
+      <div id="progressBarOuter"><div id="progressBarInner"></div></div>
+      <div id="progressLabel">0 / 0 exercises</div>
+    </div>
+    <button id="resetBtn" class="ghost" title="Clear all saved progress on this device">Reset progress</button>
+    <div id="bootStatus">Booting Python…</div>
+  </header>
+  <div id="body">
+    <nav id="sidebar"></nav>
+    <main id="content"></main>
+  </div>
+</div>
+
+<script>
+/* ==============================================================
+   ENGINE — reads CURRICULUM from lessons.js. Nothing course-specific
+   lives in this file; add lessons/exercises/units in lessons.js only.
+   ============================================================== */
+
+const STORAGE_KEY = "codecamp_progress_v2";
+
+/* ---------- flatten CURRICULUM into lookup structures ---------- */
+const FLAT = [];                 // ordered list of {unit, lesson, exercise}
+const exerciseIndex = new Map(); // exerciseId -> {unit, lesson, exercise}
+const lessonIndex = new Map();   // lessonId -> {unit, lesson, exerciseIds}
+
+CURRICULUM.forEach(unit => {
+  unit.lessons.forEach(lesson => {
+    const exerciseIds = lesson.exercises.map(ex => ex.id);
+    lessonIndex.set(lesson.id, { unit, lesson, exerciseIds });
+    lesson.exercises.forEach(exercise => {
+      const record = { unit, lesson, exercise };
+      FLAT.push(record);
+      exerciseIndex.set(exercise.id, record);
+    });
+  });
+});
+
+/* ---------- persisted state ---------- */
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) throw new Error("empty");
+    const parsed = JSON.parse(raw);
+    return {
+      completed: new Set(Array.isArray(parsed.completed) ? parsed.completed : []),
+      code: parsed.code && typeof parsed.code === "object" ? parsed.code : {},
+      lastExerciseId: parsed.lastExerciseId || null
+    };
+  } catch (e) {
+    return { completed: new Set(), code: {}, lastExerciseId: null };
+  }
+}
+function saveState() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({
+    completed: Array.from(state.completed),
+    code: state.code,
+    lastExerciseId: currentExerciseId
+  }));
+}
+
+const state = loadState();
+
+/* ---------- app state ---------- */
+let currentExerciseId =
+  (state.lastExerciseId && exerciseIndex.has(state.lastExerciseId))
+    ? state.lastExerciseId
+    : (FLAT.length ? FLAT[0].exercise.id : null);
+
+let pyodide = null;
+let pyodideReady = false;
+let saveTimer = null;
+
+const sidebarEl = document.getElementById("sidebar");
+const contentEl = document.getElementById("content");
+const bootStatusEl = document.getElementById("bootStatus");
+const progressInnerEl = document.getElementById("progressBarInner");
+const progressLabelEl = document.getElementById("progressLabel");
+const resetBtn = document.getElementById("resetBtn");
+
+resetBtn.addEventListener("click", () => {
+  if (!confirm("Clear all saved progress and code on this device? This can't be undone.")) return;
+  localStorage.removeItem(STORAGE_KEY);
+  state.completed = new Set();
+  state.code = {};
+  renderSidebar();
+  renderMain();
+  updateProgress();
+});
+
+/* ---------- boot pyodide ---------- */
+const PY_RUNNER = `
+import sys, io, traceback
+
+_last_ns = {}
+_last_stdout = ""
+_last_error = None
+
+def _run_student(code, stdin_lines):
+    global _last_ns, _last_stdout, _last_error
+    ns = {}
+    lines = list(stdin_lines)
+    def _input(prompt=""):
+        if prompt:
+            print(prompt, end="")
+        val = lines.pop(0) if lines else ""
+        print(val)
+        return val
+    ns["input"] = _input
+    buf = io.StringIO()
+    old_stdout = sys.stdout
+    sys.stdout = buf
+    error = None
+    try:
+        exec(compile(code, "<student>", "exec"), ns)
+    except Exception:
+        error = traceback.format_exc()
+    finally:
+        sys.stdout = old_stdout
+    _last_ns = ns
+    _last_stdout = buf.getvalue()
+    _last_error = error
+    return {"stdout": _last_stdout, "error": error}
+
+def _run_check(check_code):
+    check_ns = dict(_last_ns)
+    check_ns["_stdout"] = _last_stdout
+    try:
+        exec(compile(check_code, "<check>", "exec"), check_ns)
+        return str(check_ns.get("result", "Checker didn't set a result."))
+    except Exception:
+        return "Checker error: " + traceback.format_exc()
+`;
+
+async function boot() {
+  pyodide = await loadPyodide();
+  pyodide.runPython(PY_RUNNER);
+  pyodideReady = true;
+  bootStatusEl.textContent = "Python ready";
+  bootStatusEl.classList.add("ready");
+  updateButtonsEnabled();
+}
+boot();
+
+function updateButtonsEnabled() {
+  const runBtn = document.getElementById("runBtn");
+  const checkBtn = document.getElementById("checkBtn");
+  if (runBtn) runBtn.disabled = !pyodideReady;
+  if (checkBtn) checkBtn.disabled = !pyodideReady;
+}
+
+/* ---------- syntax highlighting (read-only example blocks) ---------- */
+const PY_KEYWORDS = ["def","return","if","elif","else","for","while","in","break","continue","import","from","as","class","try","except","finally","pass","True","False","None","and","or","not","is","lambda","with","yield","global","nonlocal","raise","assert","del"];
+const PY_BUILTINS = ["print","input","int","float","str","len","range","list","dict","set","tuple","sum","max","min","sorted","enumerate","zip","map","filter","type","isinstance","open","abs","round"];
+
+function escapeHtml(s) {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+function highlightPython(code) {
+  const escaped = escapeHtml(code);
+  const tokenRe = /(#.*$)|("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')|(\b\d+\.?\d*\b)|(\b[a-zA-Z_][a-zA-Z0-9_]*\b)/gm;
+  return escaped.replace(tokenRe, (match, comment, str, num, word) => {
+    if (comment) return `<span class="tok-comment">${comment}</span>`;
+    if (str) return `<span class="tok-string">${str}</span>`;
+    if (num) return `<span class="tok-number">${num}</span>`;
+    if (word) {
+      if (PY_KEYWORDS.includes(word)) return `<span class="tok-keyword">${word}</span>`;
+      if (PY_BUILTINS.includes(word)) return `<span class="tok-builtin">${word}</span>`;
+      return word;
+    }
+    return match;
+  });
+}
+
+/* ---------- progress helpers ---------- */
+function lessonStatus(lessonId) {
+  const { exerciseIds } = lessonIndex.get(lessonId);
+  const done = exerciseIds.filter(id => state.completed.has(id)).length;
+  if (done === 0) return "none";
+  if (done === exerciseIds.length) return "done";
+  return "partial";
+}
+
+function updateProgress() {
+  const total = FLAT.length;
+  const done = FLAT.filter(r => state.completed.has(r.exercise.id)).length;
+  const pct = total ? Math.round((done / total) * 100) : 0;
+  progressInnerEl.style.width = pct + "%";
+  progressLabelEl.textContent = `${done} / ${total} exercises`;
+}
+
+/* ---------- sidebar ---------- */
+function renderSidebar() {
+  sidebarEl.innerHTML = "";
+  const currentLessonId = exerciseIndex.get(currentExerciseId)?.lesson.id;
+  CURRICULUM.forEach(unit => {
+    const header = document.createElement("div");
+    header.className = "unit-header";
+    header.textContent = unit.title;
+    sidebarEl.appendChild(header);
+    unit.lessons.forEach(lesson => {
+      const status = lessonStatus(lesson.id);
+      const item = document.createElement("div");
+      item.className = "lesson-item" +
+        (lesson.id === currentLessonId ? " active" : "") +
+        (status === "done" ? " done" : status === "partial" ? " partial" : "");
+      const badge = status === "done" ? "✓" : lessonIndex.get(lesson.id).exerciseIds.length > 1
+        ? `${lessonIndex.get(lesson.id).exerciseIds.filter(id => state.completed.has(id)).length}/${lessonIndex.get(lesson.id).exerciseIds.length}`
+        : "•";
+      item.innerHTML = `<span class="lesson-num">${status === "none" && lessonIndex.get(lesson.id).exerciseIds.length <= 1 ? "" : badge}</span><span class="lesson-title">${lesson.title}</span>`;
+      item.addEventListener("click", () => selectLessonDefault(lesson.id));
+      sidebarEl.appendChild(item);
+    });
+  });
+}
+
+function selectLessonDefault(lessonId) {
+  const { exerciseIds } = lessonIndex.get(lessonId);
+  const firstUnfinished = exerciseIds.find(id => !state.completed.has(id));
+  selectExercise(firstUnfinished || exerciseIds[exerciseIds.length - 1]);
+}
+
+function selectExercise(exerciseId) {
+  currentExerciseId = exerciseId;
+  saveState();
+  renderSidebar();
+  renderMain();
+}
+
+/* ---------- main content ---------- */
+function renderMain() {
+  const record = exerciseIndex.get(currentExerciseId);
+  if (!record) {
+    contentEl.innerHTML = `<p>No lessons yet — add some to lessons.js!</p>`;
+    return;
+  }
+  const { lesson, exercise } = record;
+  const { exerciseIds } = lessonIndex.get(lesson.id);
+  const savedCode = state.code[exercise.id];
+  const editorValue = (typeof savedCode === "string") ? savedCode : exercise.starter;
+
+  let pillsHtml = "";
+  if (exerciseIds.length > 1) {
+    pillsHtml = `<div class="exercise-pills">` + exerciseIds.map((id, idx) => {
+      const ex = exerciseIndex.get(id).exercise;
+      const cls = "exercise-pill" + (id === exercise.id ? " active" : "") + (state.completed.has(id) ? " pill-done" : "");
+      return `<button type="button" class="${cls}" data-exid="${id}">${state.completed.has(id) ? "✓ " : ""}${idx + 1}. ${escapeHtml(ex.title)}</button>`;
+    }).join("") + `</div>`;
+  }
+
+  const flatIdx = FLAT.findIndex(r => r.exercise.id === exercise.id);
+  const hasPrev = flatIdx > 0;
+  const hasNext = flatIdx >= 0 && flatIdx < FLAT.length - 1;
+
+  contentEl.innerHTML = `
+    <h2>${escapeHtml(lesson.title)}</h2>
+    <p class="blurb">${escapeHtml(lesson.blurb)}</p>
+    <div class="concept">${lesson.concept}</div>
+    <pre class="code-block">${highlightPython(lesson.example)}</pre>
+    <div class="notes">${lesson.notes}</div>
+    <hr class="divider" />
+    ${pillsHtml}
+    <h3 class="exercise-title">Exercise: ${escapeHtml(exercise.title)}</h3>
+    <div class="exercise-desc">${exercise.desc}</div>
+    <textarea id="editor" spellcheck="false">${escapeHtml(editorValue)}</textarea>
+    <div class="toolbar">
+      <button id="runBtn" class="primary">▶ Run</button>
+      <button id="checkBtn" class="check">✓ Check answer</button>
+      <button id="hintBtn" class="ghost">💡 Hint</button>
+      <span class="autosave-note" id="autosaveNote"></span>
+    </div>
+    <div id="hintBox" class="hidden">${exercise.hint}</div>
+    <div id="output"></div>
+    <div class="lesson-nav">
+      <button id="prevBtn" class="ghost" ${hasPrev ? "" : "disabled"}>← Previous</button>
+      <button id="nextBtn" class="ghost" ${hasNext ? "" : "disabled"}>Next →</button>
+    </div>
+  `;
+
+  const editor = document.getElementById("editor");
+  editor.addEventListener("keydown", (e) => {
+    if (e.key === "Tab") {
+      e.preventDefault();
+      const start = editor.selectionStart, end = editor.selectionEnd;
+      editor.value = editor.value.slice(0, start) + "    " + editor.value.slice(end);
+      editor.selectionStart = editor.selectionEnd = start + 4;
+    }
+  });
+  editor.addEventListener("input", () => {
+    clearTimeout(saveTimer);
+    const note = document.getElementById("autosaveNote");
+    if (note) note.textContent = "saving…";
+    saveTimer = setTimeout(() => {
+      state.code[exercise.id] = editor.value;
+      saveState();
+      const n = document.getElementById("autosaveNote");
+      if (n) n.textContent = "saved";
+    }, 700);
+  });
+
+  document.getElementById("runBtn").addEventListener("click", onRun);
+  document.getElementById("checkBtn").addEventListener("click", onCheck);
+  document.getElementById("hintBtn").addEventListener("click", () => {
+    document.getElementById("hintBox").classList.toggle("hidden");
+  });
+  document.getElementById("prevBtn").addEventListener("click", () => {
+    if (hasPrev) selectExercise(FLAT[flatIdx - 1].exercise.id);
+  });
+  document.getElementById("nextBtn").addEventListener("click", () => {
+    if (hasNext) selectExercise(FLAT[flatIdx + 1].exercise.id);
+  });
+  contentEl.querySelectorAll(".exercise-pill").forEach(pill => {
+    pill.addEventListener("click", () => selectExercise(pill.dataset.exid));
+  });
+
+  updateButtonsEnabled();
+}
+
+/* ---------- run / check ---------- */
+function stdinToLines(stdin) {
+  if (!stdin) return [];
+  const parts = stdin.split("\n");
+  if (parts.length && parts[parts.length - 1] === "") parts.pop();
+  return parts;
+}
+
+async function runStudentCode() {
+  const editor = document.getElementById("editor");
+  const code = editor.value;
+  const record = exerciseIndex.get(currentExerciseId);
+  state.code[currentExerciseId] = code;
+  saveState();
+  pyodide.globals.set("_student_code", code);
+  pyodide.globals.set("_stdin_lines", pyodide.toPy(stdinToLines(record.exercise.stdin)));
+  const resultProxy = pyodide.runPython("_run_student(_student_code, _stdin_lines)");
+  const result = resultProxy.toJs({ dict_converter: Object.fromEntries });
+  resultProxy.destroy();
+  return result;
+}
+
+function renderOutput(stdout, error, checkMsg) {
+  const outEl = document.getElementById("output");
+  let html = `<div class="out-label">Output</div><pre class="out-pre">${escapeHtml(stdout) || "<i>(no output)</i>"}</pre>`;
+  if (error) {
+    html += `<div class="out-label">Error</div><pre class="out-pre out-error">${escapeHtml(error)}</pre>`;
+  }
+  if (checkMsg !== null && checkMsg !== undefined) {
+    if (checkMsg === "PASS") {
+      html += `<div class="result-banner result-pass">✅ Correct! Nice work — this exercise is marked complete.</div>`;
+    } else {
+      html += `<div class="result-banner result-fail">Not quite yet: ${escapeHtml(checkMsg)}</div>`;
+    }
+  }
+  outEl.innerHTML = html;
+}
+
+async function onRun() {
+  if (!pyodideReady) return;
+  const runBtn = document.getElementById("runBtn");
+  const checkBtn = document.getElementById("checkBtn");
+  runBtn.disabled = true; checkBtn.disabled = true;
+  try {
+    const result = await runStudentCode();
+    renderOutput(result.stdout, result.error, null);
+  } finally {
+    runBtn.disabled = false; checkBtn.disabled = false;
+  }
+}
+
+async function onCheck() {
+  if (!pyodideReady) return;
+  const runBtn = document.getElementById("runBtn");
+  const checkBtn = document.getElementById("checkBtn");
+  runBtn.disabled = true; checkBtn.disabled = true;
+  try {
+    const result = await runStudentCode();
+    const record = exerciseIndex.get(currentExerciseId);
+    pyodide.globals.set("_check_code", record.exercise.check);
+    const checkMsg = pyodide.runPython("_run_check(_check_code)");
+    renderOutput(result.stdout, result.error, checkMsg);
+    if (checkMsg === "PASS") {
+      state.completed.add(currentExerciseId);
+      saveState();
+      updateProgress();
+      renderSidebar();
+      renderMain();
+      // renderMain() rebuilds the output panel too, so show the pass banner again
+      renderOutput(result.stdout, result.error, checkMsg);
+    }
+  } finally {
+    runBtn.disabled = false; checkBtn.disabled = false;
+  }
+}
+
+/* ---------- init ---------- */
+renderSidebar();
+renderMain();
+updateProgress();
+updateButtonsEnabled();
+</script>
+</body>
+</html>
