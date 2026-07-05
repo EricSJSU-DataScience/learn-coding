@@ -5,7 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Code Camp — Learn Python</title>
 <script src="https://cdn.jsdelivr.net/pyodide/v314.0.2/full/pyodide.js"></script>
-<script src="lessons.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="curriculum-loader.js"></script>
 <style>
   :root {
     --bg: #1e1f29;
@@ -165,6 +166,13 @@
     color: var(--yellow); font-size: 14px; line-height: 1.5;
   }
   #hintBox.hidden { display: none; }
+  #hintBox p:last-child { margin-bottom: 0; }
+  #hintBox pre {
+    background: rgba(0, 0, 0, 0.2); border-radius: 6px;
+    padding: 10px 12px; overflow-x: auto; margin: 8px 0 0;
+    font-family: "SF Mono", Menlo, Consolas, monospace; font-size: 13px;
+  }
+  #hintBox code { font-family: "SF Mono", Menlo, Consolas, monospace; }
 
   #output { margin-top: 16px; }
   .out-pre {
@@ -211,28 +219,38 @@
 
 <script>
 /* ==============================================================
-   ENGINE — reads CURRICULUM from lessons.js. Nothing course-specific
-   lives in this file; add lessons/exercises/units in lessons.js only.
+   ENGINE — reads CURRICULUM, loaded asynchronously from the
+   curriculum/ folder by curriculum-loader.js. Nothing course-specific
+   lives in this file; add lessons/exercises/units under curriculum/
+   and list them in curriculum/manifest.json. See SETUP_GUIDE.md.
    ============================================================== */
 
 const STORAGE_KEY = "codecamp_progress_v2";
 
-/* ---------- flatten CURRICULUM into lookup structures ---------- */
-const FLAT = [];                 // ordered list of {unit, lesson, exercise}
-const exerciseIndex = new Map(); // exerciseId -> {unit, lesson, exercise}
-const lessonIndex = new Map();   // lessonId -> {unit, lesson, exerciseIds}
+/* ---------- CURRICULUM + flattened lookup structures ----------
+   Populated asynchronously by main() once curriculum-loader.js has
+   fetched and parsed everything under curriculum/. */
+let CURRICULUM = [];
+let FLAT = [];                 // ordered list of {unit, lesson, exercise}
+let exerciseIndex = new Map(); // exerciseId -> {unit, lesson, exercise}
+let lessonIndex = new Map();   // lessonId -> {unit, lesson, exerciseIds}
 
-CURRICULUM.forEach(unit => {
-  unit.lessons.forEach(lesson => {
-    const exerciseIds = lesson.exercises.map(ex => ex.id);
-    lessonIndex.set(lesson.id, { unit, lesson, exerciseIds });
-    lesson.exercises.forEach(exercise => {
-      const record = { unit, lesson, exercise };
-      FLAT.push(record);
-      exerciseIndex.set(exercise.id, record);
+function indexCurriculum() {
+  FLAT = [];
+  exerciseIndex = new Map();
+  lessonIndex = new Map();
+  CURRICULUM.forEach(unit => {
+    unit.lessons.forEach(lesson => {
+      const exerciseIds = lesson.exercises.map(ex => ex.id);
+      lessonIndex.set(lesson.id, { unit, lesson, exerciseIds });
+      lesson.exercises.forEach(exercise => {
+        const record = { unit, lesson, exercise };
+        FLAT.push(record);
+        exerciseIndex.set(exercise.id, record);
+      });
     });
   });
-});
+}
 
 /* ---------- persisted state ---------- */
 function loadState() {
@@ -260,10 +278,7 @@ function saveState() {
 const state = loadState();
 
 /* ---------- app state ---------- */
-let currentExerciseId =
-  (state.lastExerciseId && exerciseIndex.has(state.lastExerciseId))
-    ? state.lastExerciseId
-    : (FLAT.length ? FLAT[0].exercise.id : null);
+let currentExerciseId = null; // set once the curriculum has loaded, in main()
 
 let pyodide = null;
 let pyodideReady = false;
@@ -275,6 +290,8 @@ const bootStatusEl = document.getElementById("bootStatus");
 const progressInnerEl = document.getElementById("progressBarInner");
 const progressLabelEl = document.getElementById("progressLabel");
 const resetBtn = document.getElementById("resetBtn");
+
+contentEl.innerHTML = `<p>Loading curriculum…</p>`;
 
 resetBtn.addEventListener("click", () => {
   if (!confirm("Clear all saved progress and code on this device? This can't be undone.")) return;
@@ -429,7 +446,7 @@ function selectExercise(exerciseId) {
 function renderMain() {
   const record = exerciseIndex.get(currentExerciseId);
   if (!record) {
-    contentEl.innerHTML = `<p>No lessons yet — add some to lessons.js!</p>`;
+    contentEl.innerHTML = `<p>No lessons yet — add some under curriculum/!</p>`;
     return;
   }
   const { lesson, exercise } = record;
@@ -591,10 +608,26 @@ async function onCheck() {
 }
 
 /* ---------- init ---------- */
-renderSidebar();
-renderMain();
-updateProgress();
-updateButtonsEnabled();
+async function main() {
+  try {
+    CURRICULUM = await loadCurriculum();
+  } catch (err) {
+    contentEl.innerHTML = `<p>Couldn't load the curriculum (${escapeHtml(String((err && err.message) || err))}).<br><br>
+      If you're opening this file directly (file://), browsers block loading the curriculum/ folder that way —
+      serve it with a local server instead (e.g. <code>python3 -m http.server</code>) or view it through GitHub Pages.</p>`;
+    return;
+  }
+  indexCurriculum();
+  currentExerciseId =
+    (state.lastExerciseId && exerciseIndex.has(state.lastExerciseId))
+      ? state.lastExerciseId
+      : (FLAT.length ? FLAT[0].exercise.id : null);
+  renderSidebar();
+  renderMain();
+  updateProgress();
+  updateButtonsEnabled();
+}
+main();
 </script>
 </body>
 </html>

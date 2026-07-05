@@ -1,0 +1,9 @@
+{
+  "units": [
+    { "id": "unit-1", "title": "Unit 1: Fundamentals", "lessons": ["hello", "variables", "input", "operators"] },
+    { "id": "unit-2", "title": "Unit 2: Control Flow", "lessons": ["if", "for", "while"] },
+    { "id": "unit-3", "title": "Unit 3: Collections", "lessons": ["lists", "strings"] },
+    { "id": "unit-4", "title": "Unit 4: Functions & Dictionaries", "lessons": ["functions", "dicts"] },
+    { "id": "unit-5", "title": "Unit 5: Final Project", "lessons": ["final"] }
+  ]
+}

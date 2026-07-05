@@ -6,14 +6,18 @@ A Python learning site for your 13-year-old, built to grow over months, not just
 
 ## What you're getting
 
-Two files work together:
+Three things work together:
 
 - **`index.html`** — the "engine." Sidebar, progress bar, code editor, Run/Check buttons, hints, Pyodide setup. You should basically never need to edit this.
-- **`lessons.js`** — the "content." Every unit, lesson, and exercise lives here as plain data. This is the file you'll come back to whenever you want to add more.
+- **`curriculum-loader.js`** — reads the `curriculum/` folder below at page load and hands the engine the data it needs. You shouldn't need to edit this either.
+- **`curriculum/`** — the "content." Every unit, lesson, and exercise lives here as its own plain markdown file. This is what you'll come back to whenever you want to add more:
+  - `curriculum/manifest.json` — lists the units and which lesson files belong to each, in order.
+  - `curriculum/lessons/*.md` — one file per lesson (concept, example, notes).
+  - `curriculum/exercises/*.md` — one file per exercise (description, starter code, hint, checker).
 
-Splitting it this way is what makes the course extensible — adding a new exercise next month means editing `lessons.js`, not rebuilding the site.
+Splitting it this way is what makes the course extensible — adding a new exercise next month means dropping a new `.md` file into `curriculum/` and adding one line to a list, not editing a giant JS file or touching `index.html`.
 
-(`index_v1.html` is the original single-file prototype, kept around for reference. You don't need it for anything — the two files above are the real site.)
+(`index_v1.html` is the original single-file prototype, and `lessons.js` is the old all-in-one curriculum file — both kept around for reference only. Neither is loaded by the live site anymore.)
 
 Features:
 
@@ -33,7 +37,7 @@ It uses **Pyodide** (real CPython compiled to WebAssembly), so Python runs in th
 
 1. **Create a GitHub account** at github.com if you don't have one (free).
 2. **Create a new repository** — click the **+** (top right) → *New repository*. Name it something like `python-camp`. Set it to **Public**. Click *Create repository*.
-3. **Upload the files** — on the repo page click *Add file* → *Upload files*. Drag in **both** `index.html` and `lessons.js` (they must sit in the same folder). Click *Commit changes*.
+3. **Upload the files** — on the repo page click *Add file* → *Upload files*. Drag in `index.html`, `curriculum-loader.js`, and the whole `curriculum/` folder (keep its internal structure — `manifest.json`, `lessons/`, `exercises/`), all in the same top-level folder. Click *Commit changes*.
 4. **Turn on Pages** — go to the repo's *Settings* tab → *Pages* (left sidebar). Under *Branch*, pick **main** and **/(root)**, then *Save*.
 5. **Wait ~1 minute**, then refresh. GitHub shows your live URL, like:
    `https://YOUR-USERNAME.github.io/python-camp/`
@@ -41,7 +45,7 @@ It uses **Pyodide** (real CPython compiled to WebAssembly), so Python runs in th
 
 > First load takes a few seconds while Python boots (you'll see "Booting Python…" turn to "Python ready"). After that it's instant.
 
-> Whenever you add lessons later, re-upload just the changed `lessons.js` (Add file → Upload files → let it overwrite) and commit. No need to touch `index.html`.
+> Whenever you add lessons later, re-upload just the new/changed files under `curriculum/` (Add file → Upload files → let it overwrite) and commit. No need to touch `index.html` or `curriculum-loader.js`.
 
 ---
 
@@ -91,39 +95,114 @@ Each lesson builds on the last. Exercises are graded by hidden test logic — th
 
 ## Adding more lessons and exercises
 
-Everything you need is documented right at the top of `lessons.js` — open it and read the comment block first, it has copy-paste templates for a new exercise, a new lesson, and a new unit. The short version:
+Content lives as individual markdown files under `curriculum/` — no need to touch JavaScript at all. Each exercise is its own `.md` file, each lesson is its own `.md` file, and `curriculum/manifest.json` says which units/lessons exist and in what order.
 
-```javascript
-// Add to a lesson's "exercises" array:
-{
-  id: "unique-exercise-id",         // never reused, never changed later
-  title: "Exercise name",
-  desc: `What to do. Use <code>backtick code</code>.`,
-  starter: `# starter code the student sees\n`,
-  stdin: "optional\ninput\nlines\n",  // only if the exercise uses input()
-  hint: `A helpful nudge.`,
-  check: `
-out = _stdout.strip()          # the student's printed output
-if out == "expected answer":
-    result = "PASS"
-else:
-    result = f"Expected 'X' but got '{out}'"
-`
-}
-```
+### Adding a new exercise to an existing lesson
 
-The `check` block is plain Python. It has access to:
+1. Create `curriculum/exercises/your-new-id.md`:
+
+   ````markdown
+   ---
+   id: your-new-id
+   title: Exercise name
+   stdin: "optional\ninput\nlines\n"   <- only if the exercise uses input()
+   ---
+
+   ## Description
+
+   What to do. Use `backtick code` for inline code.
+
+   ## Starter
+
+   ```python
+   # starter code the student sees
+   ```
+
+   ## Hint
+
+   A helpful nudge, not the full answer.
+
+   ## Check
+
+   ```python
+   out = _stdout.strip()          # the student's printed output
+   if out == "expected answer":
+       result = "PASS"
+   else:
+       result = f"Expected 'X' but got '{out}'"
+   ```
+   ````
+
+2. Open the lesson's `.md` file under `curriculum/lessons/` and add `your-new-id` to its `exercises:` list in the frontmatter.
+
+The `Check` block is plain Python, run after the student's code. It has access to:
 - `_stdout` — everything the student's program printed
 - any variables/functions the student defined
 
-Set `result = "PASS"` to mark it correct, or `result = "some message"` to show a hint.
+Set `result = "PASS"` to mark it correct, or `result = "some message"` to show as a hint.
 
-A few rules that matter because progress is now saved by id:
+### Adding a whole new lesson
+
+1. Create `curriculum/lessons/your-lesson-id.md`:
+
+   ````markdown
+   ---
+   id: your-lesson-id
+   title: Lesson title
+   blurb: One-line summary.
+   exercises:
+     - your-new-id
+   ---
+
+   ## Concept
+
+   Explain the concept here. You can use `code`, **bold**, and:
+
+   - bullet
+   - points
+
+   ## Example
+
+   ```python
+   print("a short, readable code example")
+   ```
+
+   ## Notes
+
+   - A quick tip.
+   - Another quick tip.
+   ````
+
+2. Add its exercise file(s) as above.
+3. Add `your-lesson-id` to the right unit's `lessons` list in `curriculum/manifest.json`.
+
+### Adding a whole new unit
+
+Add a new entry to `curriculum/manifest.json`:
+
+```json
+{ "id": "unit-6", "title": "Unit 6: Your New Topic", "lessons": ["your-lesson-id"] }
+```
+
+### Rules that matter
+
 - **Never change or reuse an `id`** (lesson or exercise) once it's been shipped — that id is the key progress is saved under. Changing it makes a finished exercise look brand new.
-- **It's always safe to append** new exercises to a lesson, new lessons to a unit, or new units to the end of `lessons.js`. Existing progress is untouched.
-- Giving a lesson more than one exercise (like the bonus second exercise on "Say Hello to Python") is the easiest way to add more practice reps without inventing a whole new lesson — just add another object to that lesson's `exercises` array.
+- **It's always safe to append** — new exercise files, new lesson files, new units in `manifest.json`. Existing progress is untouched.
+- Giving a lesson more than one exercise (like the bonus second exercise on "Say Hello to Python") is the easiest way to add more practice reps without inventing a whole new lesson — just add another id to that lesson's `exercises:` list.
+- Concept/Notes/Description/Hint sections are plain markdown (rendered to HTML automatically) — write `**bold**`, `` `code` ``, and `- bullet` lists naturally.
+- Example/Starter/Check sections must be a single fenced ` ```python ` code block — that's the part read literally as code.
 
-Copy an existing lesson or exercise as your starting point — that's the easiest way to get the format right.
+Copy an existing lesson or exercise `.md` file as your starting point — that's the easiest way to get the format right.
+
+### Testing locally before uploading
+
+Browsers block a page from fetching local files with `fetch()` when opened directly (`file://...`), which is how `curriculum-loader.js` reads everything under `curriculum/`. To preview changes before pushing to GitHub, run a tiny local server from the project folder and open the URL it prints:
+
+```
+python3 -m http.server 8000
+```
+
+Then visit `http://localhost:8000/`. GitHub Pages itself always serves over `https://`, so this only matters for local testing.
 
 ---
 
@@ -131,4 +210,4 @@ Copy an existing lesson or exercise as your starting point — that's the easies
 
 - **Totally free forever** — GitHub Pages and Pyodide cost nothing.
 - **`input()` exercises** use pre-filled answers (the `stdin` field) so the autograder can test them without a real prompt. This is explained to the student in the "Input & Type Conversion" lesson.
-- **`index.html` and `lessons.js` must be uploaded together**, in the same folder — `index.html` loads `lessons.js` as a script tag.
+- **`index.html`, `curriculum-loader.js`, and the `curriculum/` folder must be uploaded together**, in the same top-level folder — `index.html` loads `curriculum-loader.js`, which fetches everything under `curriculum/` at page load.
