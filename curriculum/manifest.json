@@ -6,6 +6,41 @@
       "folder": "unit-1",
       "lessons": ["writing-code", "memory-variables", "text-data", "numerical-data", "working-with-variables"],
       "quiz": "quiz"
+    },
+    {
+      "id": "unit-2",
+      "title": "Unit 2: Going Deeper with Python",
+      "folder": "unit-2",
+      "lessons": ["debugging", "standards-and-best-practices", "applying-best-practices", "inputs-and-outputs", "data-types"],
+      "quiz": "quiz"
+    },
+    {
+      "id": "unit-3",
+      "title": "Unit 3: Working with Data",
+      "folder": "unit-3",
+      "lessons": ["data-type-checking", "data-conversion", "fixing-data-types", "comparison-operations", "logical-operations", "combining-comparison-and-logical-operations"],
+      "quiz": "quiz"
+    },
+    {
+      "id": "unit-4",
+      "title": "Unit 4: Control Flow",
+      "folder": "unit-4",
+      "lessons": ["control-flow", "for-loops", "while-loops", "more-on-iteration", "conditional-statements", "more-on-conditional-statements"],
+      "quiz": "quiz"
+    },
+    {
+      "id": "unit-5",
+      "title": "Unit 5: Working with Lists",
+      "folder": "unit-5",
+      "lessons": ["lists", "indexing", "using-indexing", "slicing", "using-slicing", "advanced-slicing-and-indexing"],
+      "quiz": "quiz"
+    },
+    {
+      "id": "unit-6",
+      "title": "Unit 6: Mixing Things Up: Loops and Lists",
+      "folder": "unit-6",
+      "lessons": ["iterating-over-lists", "nested-loops", "iterations-and-selections", "break-and-continue"],
+      "quiz": "quiz"
     }
   ]
 }
