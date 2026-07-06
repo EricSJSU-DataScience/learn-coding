@@ -174,6 +174,26 @@
   }
   #hintBox code { font-family: "SF Mono", Menlo, Consolas, monospace; }
 
+  .quiz-options { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+  .quiz-option {
+    text-align: left; font-weight: 500; font-size: 14.5px;
+    padding: 12px 16px; border-radius: 8px; border: 1px solid var(--border);
+    background: var(--panel-2); color: var(--text); cursor: pointer;
+  }
+  .quiz-option:hover { background: #3a3d52; }
+  .quiz-option.selected { border-color: var(--accent); background: rgba(139, 233, 253, 0.12); }
+  .quiz-input {
+    width: 100%; max-width: 420px; font-size: 14px;
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+    background: #11121a; color: #f1f2f6; border: 1px solid var(--border);
+    border-radius: 8px; padding: 10px 14px; margin-bottom: 16px;
+  }
+  .quiz-input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .quiz-explanation {
+    margin-top: 10px; padding: 10px 14px; border-radius: 8px;
+    background: var(--panel-2); color: var(--text-dim); font-size: 14px; line-height: 1.5;
+  }
+
   #output { margin-top: 16px; }
   .out-pre {
     background: #0c0d13; border: 1px solid var(--border); border-radius: 8px;
@@ -451,8 +471,7 @@ function renderMain() {
   }
   const { lesson, exercise } = record;
   const { exerciseIds } = lessonIndex.get(lesson.id);
-  const savedCode = state.code[exercise.id];
-  const editorValue = (typeof savedCode === "string") ? savedCode : exercise.starter;
+  const isQuiz = exercise.type === "mcq" || exercise.type === "fill_blank";
 
   let pillsHtml = "";
   if (exerciseIds.length > 1) {
@@ -467,15 +486,52 @@ function renderMain() {
   const hasPrev = flatIdx > 0;
   const hasNext = flatIdx >= 0 && flatIdx < FLAT.length - 1;
 
+  const conceptHtml = lesson.concept ? `<div class="concept">${lesson.concept}</div>` : "";
+  const exampleHtml = lesson.example ? `<pre class="code-block">${highlightPython(lesson.example)}</pre>` : "";
+  const notesHtml = lesson.notes ? `<div class="notes">${lesson.notes}</div>` : "";
+  const titleLabel = isQuiz ? "Question" : "Exercise";
+
   contentEl.innerHTML = `
     <h2>${escapeHtml(lesson.title)}</h2>
     <p class="blurb">${escapeHtml(lesson.blurb)}</p>
-    <div class="concept">${lesson.concept}</div>
-    <pre class="code-block">${highlightPython(lesson.example)}</pre>
-    <div class="notes">${lesson.notes}</div>
+    ${conceptHtml}
+    ${exampleHtml}
+    ${notesHtml}
     <hr class="divider" />
     ${pillsHtml}
-    <h3 class="exercise-title">Exercise: ${escapeHtml(exercise.title)}</h3>
+    <h3 class="exercise-title">${titleLabel}: ${escapeHtml(exercise.title)}</h3>
+    <div id="exerciseBody"></div>
+    <div class="lesson-nav">
+      <button id="prevBtn" class="ghost" ${hasPrev ? "" : "disabled"}>← Previous</button>
+      <button id="nextBtn" class="ghost" ${hasNext ? "" : "disabled"}>Next →</button>
+    </div>
+  `;
+
+  if (isQuiz) {
+    renderQuizBody(exercise);
+  } else {
+    renderCodeExerciseBody(exercise);
+  }
+
+  document.getElementById("prevBtn").addEventListener("click", () => {
+    if (hasPrev) selectExercise(FLAT[flatIdx - 1].exercise.id);
+  });
+  document.getElementById("nextBtn").addEventListener("click", () => {
+    if (hasNext) selectExercise(FLAT[flatIdx + 1].exercise.id);
+  });
+  contentEl.querySelectorAll(".exercise-pill").forEach(pill => {
+    pill.addEventListener("click", () => selectExercise(pill.dataset.exid));
+  });
+
+  updateButtonsEnabled();
+}
+
+/* ---------- code-writing exercise body ---------- */
+function renderCodeExerciseBody(exercise) {
+  const savedCode = state.code[exercise.id];
+  const editorValue = (typeof savedCode === "string") ? savedCode : exercise.starter;
+
+  document.getElementById("exerciseBody").innerHTML = `
     <div class="exercise-desc">${exercise.desc}</div>
     <textarea id="editor" spellcheck="false">${escapeHtml(editorValue)}</textarea>
     <div class="toolbar">
@@ -486,10 +542,6 @@ function renderMain() {
     </div>
     <div id="hintBox" class="hidden">${exercise.hint}</div>
     <div id="output"></div>
-    <div class="lesson-nav">
-      <button id="prevBtn" class="ghost" ${hasPrev ? "" : "disabled"}>← Previous</button>
-      <button id="nextBtn" class="ghost" ${hasNext ? "" : "disabled"}>Next →</button>
-    </div>
   `;
 
   const editor = document.getElementById("editor");
@@ -518,17 +570,71 @@ function renderMain() {
   document.getElementById("hintBtn").addEventListener("click", () => {
     document.getElementById("hintBox").classList.toggle("hidden");
   });
-  document.getElementById("prevBtn").addEventListener("click", () => {
-    if (hasPrev) selectExercise(FLAT[flatIdx - 1].exercise.id);
-  });
-  document.getElementById("nextBtn").addEventListener("click", () => {
-    if (hasNext) selectExercise(FLAT[flatIdx + 1].exercise.id);
-  });
-  contentEl.querySelectorAll(".exercise-pill").forEach(pill => {
-    pill.addEventListener("click", () => selectExercise(pill.dataset.exid));
-  });
 
   updateButtonsEnabled();
+}
+
+/* ---------- quiz question body (mcq / fill_blank, no Pyodide needed) ---------- */
+function renderQuizBody(exercise) {
+  const saved = state.code[exercise.id];
+  const selected = typeof saved === "string" ? saved : "";
+
+  const optionsHtml = exercise.type === "mcq"
+    ? `<div class="quiz-options" id="quizOptions">${exercise.options.map(opt => {
+        const cls = "quiz-option" + (opt === selected ? " selected" : "");
+        return `<button type="button" class="${cls}" data-value="${escapeHtml(opt)}">${escapeHtml(opt)}</button>`;
+      }).join("")}</div>`
+    : `<input type="text" id="quizInput" class="quiz-input" autocomplete="off" spellcheck="false" placeholder="Type your answer" value="${escapeHtml(selected)}" />`;
+
+  document.getElementById("exerciseBody").innerHTML = `
+    <div class="exercise-desc">${exercise.desc}</div>
+    ${optionsHtml}
+    <div class="toolbar">
+      <button id="quizCheckBtn" class="check">✓ Check answer</button>
+    </div>
+    <div id="quizResult"></div>
+  `;
+
+  if (exercise.type === "mcq") {
+    contentEl.querySelectorAll(".quiz-option").forEach(btn => {
+      btn.addEventListener("click", () => {
+        contentEl.querySelectorAll(".quiz-option").forEach(b => b.classList.toggle("selected", b === btn));
+        state.code[exercise.id] = btn.dataset.value;
+        saveState();
+      });
+    });
+  } else {
+    const input = document.getElementById("quizInput");
+    input.addEventListener("input", () => {
+      state.code[exercise.id] = input.value;
+      saveState();
+    });
+  }
+
+  document.getElementById("quizCheckBtn").addEventListener("click", () => onQuizCheck(exercise));
+}
+
+function onQuizCheck(exercise) {
+  const given = String(state.code[exercise.id] || "").trim();
+  const correct = given.length > 0 && given.toLowerCase() === String(exercise.answer).trim().toLowerCase();
+  const wasComplete = state.completed.has(exercise.id);
+
+  if (correct) {
+    state.completed.add(exercise.id);
+    saveState();
+    updateProgress();
+    renderSidebar();
+    renderMain(); // rebuilds the pills/quiz body with the saved selection restored
+  }
+
+  const resultEl = document.getElementById("quizResult");
+  if (!resultEl) return; // renderMain() above may have rebuilt the DOM already
+  if (correct) {
+    resultEl.innerHTML = `<div class="result-banner result-pass">✅ Correct!${wasComplete ? "" : " Nice work — marked complete."}</div>` +
+      (exercise.explanation ? `<div class="quiz-explanation">${exercise.explanation}</div>` : "");
+  } else {
+    resultEl.innerHTML = `<div class="result-banner result-fail">Not quite — give it another try.</div>`;
+  }
 }
 
 /* ---------- run / check ---------- */
