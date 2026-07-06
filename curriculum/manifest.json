@@ -41,6 +41,54 @@
       "folder": "unit-6",
       "lessons": ["iterating-over-lists", "nested-loops", "iterations-and-selections", "break-and-continue"],
       "quiz": "quiz"
+    },
+    {
+      "id": "unit-7",
+      "title": "Unit 7: Functions",
+      "folder": "unit-7",
+      "lessons": ["functions", "function-arguments", "string-functions", "list-functions", "custom-functions", "more-on-custom-functions"],
+      "quiz": "quiz"
+    },
+    {
+      "id": "unit-8",
+      "title": "Unit 8: Mixing Things Up: Using Functions",
+      "folder": "unit-8",
+      "lessons": ["functions-and-lists", "functions-and-booleans", "useful-built-in-functions"],
+      "quiz": "quiz"
+    },
+    {
+      "id": "unit-9",
+      "title": "Unit 9: Collection Types",
+      "folder": "unit-9",
+      "lessons": ["tuples", "working-with-tuples", "sets", "dictionaries", "working-with-dictionaries", "list-comprehensions"],
+      "quiz": "quiz"
+    },
+    {
+      "id": "unit-10",
+      "title": "Unit 10: Error Handling",
+      "folder": "unit-10",
+      "lessons": ["exceptions", "exception-handling", "more-on-exception-handling"],
+      "quiz": "quiz"
+    },
+    {
+      "id": "unit-11",
+      "title": "Unit 11: Functional Programming",
+      "folder": "unit-11",
+      "lessons": ["introduction-to-functional-programming", "lambda-expressions", "map-and-filter", "args-and-kwargs", "decorators"],
+      "quiz": "quiz"
+    },
+    {
+      "id": "unit-12",
+      "title": "Unit 12: Object-Oriented Programming",
+      "folder": "unit-12",
+      "lessons": ["introduction-to-oop", "inheritance", "data-hiding", "class-and-static-methods"],
+      "quiz": "quiz"
+    },
+    {
+      "id": "unit-13",
+      "title": "Unit 13: Final Capstone Project",
+      "folder": "unit-13",
+      "lessons": ["capstone"]
     }
   ]
 }
